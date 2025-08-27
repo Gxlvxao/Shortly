@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    volumes:
+      - ./docker-data/dynamodb:/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: shortly-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DYNAMODB_TABLE_NAME=shortly-urls
+      - DOMAIN_NAME=localhost:8080
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_ENDPOINT_URL=http://dynamodb-local:8000
+    depends_on:
+      - dynamodb-local
+
+networks:
+  default:
+    name: shortly-network

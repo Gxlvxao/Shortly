@@ -1,0 +1,29 @@
+# Node
+node_modules
+dist
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+bin/
+pkg/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfplan
+.terraform.lock.hcl
+
+# OS specific
+.DS_Store
+Thumbs.db
