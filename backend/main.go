@@ -44,11 +44,6 @@ func generateShortCode(url string) string {
 }
 
 func shortenHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req ShortenRequest
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -101,11 +96,6 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	shortCode := strings.TrimPrefix(r.URL.Path, "/")
 	if shortCode == "" {
 		http.Error(w, "Short code is required", http.StatusBadRequest)
@@ -142,11 +132,36 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
+func mainHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		redirectHandler(w, r)
+	case http.MethodPost:
+		shortenHandler(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
 	var ok bool
@@ -171,16 +186,10 @@ func main() {
 	}
 
 	ddbClient = dynamodb.NewFromConfig(cfg)
-	
+
 	mux := http.NewServeMux()
+	mux.Handle("/", corsMiddleware(http.HandlerFunc(mainHandler)))
 	mux.HandleFunc("/health", healthCheckHandler)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			shortenHandler(w, r)
-		} else {
-			redirectHandler(w, r)
-		}
-	})
 
 	server := &http.Server{
 		Addr:         ":8080",

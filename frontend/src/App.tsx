@@ -21,7 +21,8 @@ function App() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8080', { url });
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  const response = await axios.post(apiUrl, { url });
       setShortUrl(response.data.short_url);
     } catch (err) {
       setError('Failed to shorten URL. Please try again.');
