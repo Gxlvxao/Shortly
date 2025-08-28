@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import axios from 'axios';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [url, setUrl] = useState('');
+  const [shortUrl, setShortUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setShortUrl('');
+
+    if (!url) {
+      setError('Please enter a URL to shorten.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:8080', { url });
+      setShortUrl(response.data.short_url);
+    } catch (err) {
+      setError('Failed to shorten URL. Please try again.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="app-container">
+      <h1 className="title">Shortly</h1>
+      <p className="subtitle">Your modern URL shortener.</p>
+      
+      <form className="form-container" onSubmit={handleSubmit}>
+        <input
+          type="url"
+          className="url-input"
+          placeholder="Enter a long URL here..."
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          disabled={isLoading}
+        />
+        <button type="submit" className="submit-button" disabled={isLoading}>
+          {isLoading ? '...' : 'Shorten'}
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      </form>
+
+      {error && <p className="error-message">{error}</p>}
+
+      {shortUrl && (
+        <div className="result-container">
+          <p>Your short URL:</p>
+          <a href={shortUrl} target="_blank" rel="noopener noreferrer">
+            {shortUrl}
+          </a>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
